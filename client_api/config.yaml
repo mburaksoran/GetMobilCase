@@ -1,0 +1,19 @@
+aws_config:
+  secret: "test"
+  key: "test"
+  region: "eu-west-1"
+
+sqs_host : "http://localstack:4566/000000000000/order_updates"
+sql_host: "localhost"
+sql_user: "root"
+sql_password: "root"
+sql_database_name: "get_mobil_case_db"
+sql_port: "3306"
+sql_ssl_mode: "disable"
+google_scopes: ["https://www.googleapis.com/auth/userinfo.email","https://www.googleapis.com/auth/userinfo.profile"]
+google_redirect_url: "http://localhost:8080/google_callback"
+google_client_id: "324060700861-fvskdh6jbi6gmt2gr1r0pqvn5q0nv21q.apps.googleusercontent.com"
+google_client_secret: "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"
+
+
+
