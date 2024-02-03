@@ -1,4 +1,8 @@
 
+## Schema
+
+![img.png](img.png)
+
 ## Overview
 
 The system consists of three services: client_api, order_service, and payment_service. 
