@@ -3,19 +3,21 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/models"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/infra/repository/engines"
+	"go.uber.org/zap"
 )
 
 type ProductRepository struct {
 	mySqlClient *sql.DB
+	logger      *zap.SugaredLogger
 }
 
-func NewProductRepository() *ProductRepository {
+func NewProductRepository(lgr *zap.SugaredLogger) *ProductRepository {
 	sqlDbEngine := engines.GetSqlDbEngine()
 	return &ProductRepository{
 		mySqlClient: sqlDbEngine.Client,
+		logger:      lgr,
 	}
 }
 
@@ -26,6 +28,7 @@ func (r *ProductRepository) CreateProduct(product models.Product) error {
 
 	stmt, err := r.mySqlClient.Prepare(queryString)
 	if err != nil {
+		r.logger.Error(err)
 		return errors.New("failed to prepare query for insert product")
 	}
 	defer stmt.Close()
@@ -38,6 +41,7 @@ func (r *ProductRepository) CreateProduct(product models.Product) error {
 func (r *ProductRepository) GetProduct(id int) (*models.Product, error) {
 	row, err := r.mySqlClient.Query("SELECT * FROM products WHERE id = ?", id)
 	if err != nil {
+		r.logger.Error(err)
 		return nil, errors.New("failed to prepare query for insert product")
 	}
 	var sqlResult models.Product
@@ -54,9 +58,10 @@ func (r *ProductRepository) GetProduct(id int) (*models.Product, error) {
 		)
 		if err != nil {
 			if err == sql.ErrNoRows {
+				r.logger.Warn(err)
 				break
 			}
-			fmt.Println(err)
+			r.logger.Error(err)
 
 		}
 	}
@@ -66,6 +71,7 @@ func (r *ProductRepository) GetProduct(id int) (*models.Product, error) {
 func (r *ProductRepository) DeleteProduct(id int) error {
 	_, err := r.mySqlClient.Query("SELECT * FROM products WHERE id = ?", id)
 	if err != nil {
+		r.logger.Error(err)
 		return errors.New("failed to query for delete product")
 	}
 	return nil
@@ -74,20 +80,22 @@ func (r *ProductRepository) DeleteProduct(id int) error {
 func (r *ProductRepository) UpdateStockCount(value int, productId int) error {
 	tx, err := r.mySqlClient.Begin()
 	if err != nil {
-		fmt.Println(err)
+		r.logger.Error(err)
+		return err
 	}
 
 	_, err = tx.Exec("UPDATE products SET stock_count = stock_count - ? WHERE id = ?", value, productId)
 	if err != nil {
 		tx.Rollback()
-		fmt.Println(err)
+		r.logger.Error(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		fmt.Println(err)
+		r.logger.Error(err)
 	}
 	if err != nil {
+		r.logger.Error(err)
 		return errors.New("failed to query for update stock count product")
 	}
 	return nil

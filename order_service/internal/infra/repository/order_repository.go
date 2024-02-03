@@ -2,20 +2,21 @@ package repository
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/models"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/infra/repository/engines"
+	"go.uber.org/zap"
 )
 
 type OrderRepository struct {
 	mySqlClient *sql.DB
+	logger      *zap.SugaredLogger
 }
 
-func NewOrderRepository() *OrderRepository {
+func NewOrderRepository(lgr *zap.SugaredLogger) *OrderRepository {
 	sqlDbEngine := engines.GetSqlDbEngine()
 	return &OrderRepository{
 		mySqlClient: sqlDbEngine.Client,
+		logger:      lgr,
 	}
 }
 
@@ -26,7 +27,8 @@ func (r *OrderRepository) CreateOrder(order models.Order) error {
 
 	stmt, err := r.mySqlClient.Prepare(queryString)
 	if err != nil {
-		return errors.New(fmt.Sprintf("failed to prepare query for insert order:%s", err.Error()))
+		r.logger.Error("failed to prepare query for insert order", err)
+		return err
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(
@@ -38,7 +40,8 @@ func (r *OrderRepository) CreateOrder(order models.Order) error {
 func (r *OrderRepository) GetOrder(id int) (*models.Order, error) {
 	row, err := r.mySqlClient.Query("SELECT * FROM orders WHERE id = ? LIMIT 1", id)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("failed to prepare query for get order:%s", err.Error()))
+		r.logger.Error("failed to prepare query for get order", err)
+		return nil, err
 	}
 	defer row.Close()
 	var sqlResult models.Order
@@ -56,9 +59,10 @@ func (r *OrderRepository) GetOrder(id int) (*models.Order, error) {
 		)
 		if err != nil {
 			if err == sql.ErrNoRows {
+				r.logger.Warn(err)
 				break
 			}
-			fmt.Println(err)
+			r.logger.Error(err)
 
 		}
 	}
@@ -69,7 +73,8 @@ func (r *OrderRepository) GetOrder(id int) (*models.Order, error) {
 func (r *OrderRepository) DeleteOrder(id int) error {
 	_, err := r.mySqlClient.Query("SELECT * FROM orders WHERE id = ?", id)
 	if err != nil {
-		return errors.New(fmt.Sprintf("failed to prepare query for delete order:%s", err.Error()))
+		r.logger.Error("failed to prepare query for delete order", err)
+		return err
 	}
 	return nil
 }

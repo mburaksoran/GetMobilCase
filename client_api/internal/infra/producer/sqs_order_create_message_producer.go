@@ -10,17 +10,21 @@ import (
 	"github.com/mburaksoran/GetMobilCase/client_api/internal/domain/models"
 	"github.com/mburaksoran/GetMobilCase/client_api/internal/domain/models/messages"
 	"github.com/mburaksoran/GetMobilCase/client_api/internal/domain/models/types"
+	"go.uber.org/zap"
 )
 
 type SqsOrderMessageProducer struct {
 	sqs    sqsiface.SQSAPI
 	sqsUrl string
+	logger *zap.SugaredLogger
 }
 
-func NewSqsOrderMessageProducer(sqs sqsiface.SQSAPI, QueueURL string) *SqsOrderMessageProducer {
+func NewSqsOrderMessageProducer(sqs sqsiface.SQSAPI, QueueURL string, lgr *zap.SugaredLogger) *SqsOrderMessageProducer {
+	lgr.Info("creating sqs client")
 	return &SqsOrderMessageProducer{
 		sqs:    sqs,
 		sqsUrl: QueueURL,
+		logger: lgr,
 	}
 }
 func (p SqsOrderMessageProducer) OrderCreatedEvent(ctx context.Context, order *models.Order) error {
@@ -42,6 +46,7 @@ func (p SqsOrderMessageProducer) OrderCreatedEvent(ctx context.Context, order *m
 
 	messageJSON, err := json.Marshal(message)
 	if err != nil {
+		p.logger.Error(err)
 		return errors.New("error marshaling message")
 	}
 
@@ -51,6 +56,7 @@ func (p SqsOrderMessageProducer) OrderCreatedEvent(ctx context.Context, order *m
 	})
 
 	if err != nil {
+		p.logger.Error(err)
 		return err
 	}
 

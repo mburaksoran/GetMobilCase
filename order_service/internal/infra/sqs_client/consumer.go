@@ -3,18 +3,28 @@ package sqs_client
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/app/config"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/models/messages"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/service"
+	"go.uber.org/zap"
 )
 
 type Consumer struct {
 	Client  *sqs.SQS
 	Cfg     *config.AppConfig
 	Service service.OrderServiceInterface
+	logger  *zap.SugaredLogger
+}
+
+func NewConsumer(client *sqs.SQS, cfg *config.AppConfig, serv service.OrderServiceInterface, lgr *zap.SugaredLogger) Consumer {
+	return Consumer{
+		Client:  client,
+		Cfg:     cfg,
+		Service: serv,
+		logger:  lgr,
+	}
 }
 
 func (c *Consumer) Start() {
@@ -25,7 +35,7 @@ func (c *Consumer) Start() {
 			WaitTimeSeconds:     aws.Int64(10),
 		})
 		if err != nil {
-			fmt.Println(err)
+			c.logger.Error("error while gathering messages from queue", err)
 		}
 
 		for _, message := range output.Messages {
@@ -38,19 +48,19 @@ func (c *Consumer) handle(msg *sqs.Message) {
 	metadataEvent := messages.MetadataEvent{}
 	err := json.Unmarshal([]byte(*msg.Body), &metadataEvent)
 	if err != nil {
-		fmt.Printf("error unmarshalling message body: %s", err.Error())
+		c.logger.Error("error unmarshalling message body", err)
 	}
 	handler, factoryErr := eventHandlerFactory(metadataEvent.Metadata.EventName, c.Service)
 	if factoryErr != nil {
-		fmt.Printf("creating event handler: %s", factoryErr.Error())
+		c.logger.Error("error creating event handler", factoryErr)
 	}
 	handleErr := handler.HandleEvent(context.Background(), msg)
 	if handleErr != nil {
-		fmt.Printf("error handle event: %s", handleErr.Error())
+		c.logger.Error("error handle event:", handleErr)
 	}
 	deleteErr := c.DeleteMessage(msg.ReceiptHandle)
 	if deleteErr != nil {
-		fmt.Printf("error delete event: %s", deleteErr.Error())
+		c.logger.Error("error while deleting consumed messages from queue", err)
 	}
 }
 

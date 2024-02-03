@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -12,53 +11,63 @@ import (
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/infra/repository"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/infra/repository/engines"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/infra/sqs_client"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"log"
+	"time"
 )
 
 func main() {
-	_, cancel := context.WithCancel(context.Background())
-	defer cancel()
+
+	loggerConfig := zap.NewProductionConfig()
+	loggerConfig.EncoderConfig.TimeKey = "timestamp"
+	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
+
+	logger, err := loggerConfig.Build()
+	if err != nil {
+		log.Fatal(err)
+	}
+	lgr := logger.Sugar()
+
 	cfg, err := config.InitFromConfigFile()
 	if err != nil {
-		fmt.Println(err)
+		lgr.Error(err)
 	}
 
-	_, err = prepareSqlDbEngine(cfg)
+	_, err = prepareSqlDbEngine(cfg, lgr)
+	if err != nil {
+		lgr.Error(err)
+	}
+
+	_, err = prepareMongoDbEngine(cfg, lgr)
+	if err != nil {
+		lgr.Error(err)
+	}
+
+	repoMongo := repository.NewMongodbOrderRepository(cfg, lgr)
+	repo := repository.NewOrderRepository(lgr)
+	productRepo := repository.NewProductRepository(lgr)
+
+	orderServ := service.NewOrderService(repo, productRepo, repoMongo, lgr)
+	client, err := PrepareSQSClient(cfg, lgr)
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	_, err = prepareMongoDbEngine(cfg)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	repoMongo := repository.NewMongodbOrderRepository(cfg)
-	repo := repository.NewOrderRepository()
-	productRepo := repository.NewProductRepository()
-
-	orderServ := service.NewOrderService(repo, productRepo, repoMongo)
-	client, err := PrepareSQSClient(cfg)
-	if err != nil {
-		fmt.Println(err)
-	}
-	cons := sqs_client.Consumer{
-		Client:  client,
-		Cfg:     cfg,
-		Service: orderServ,
-	}
+	cons := sqs_client.NewConsumer(client, cfg, orderServ, lgr)
 	cons.Start()
 
 }
 
-func prepareMongoDbEngine(cfg *config.AppConfig) (*engines.MongoDbEngine, error) {
-	return engines.SetupMongoDBEngine(cfg)
+func prepareMongoDbEngine(cfg *config.AppConfig, lgr *zap.SugaredLogger) (*engines.MongoDbEngine, error) {
+	return engines.SetupMongoDBEngine(cfg, lgr)
 }
 
-func prepareSqlDbEngine(cfg *config.AppConfig) (*engines.SqlDbEngine, error) {
-	return engines.SetupSqlDBEngine(cfg)
+func prepareSqlDbEngine(cfg *config.AppConfig, lgr *zap.SugaredLogger) (*engines.SqlDbEngine, error) {
+	return engines.SetupSqlDBEngine(cfg, lgr)
 }
 
-func PrepareSQSClient(cfg *config.AppConfig) (*sqs.SQS, error) {
+func PrepareSQSClient(cfg *config.AppConfig, lgr *zap.SugaredLogger) (*sqs.SQS, error) {
+	lgr.Info("creating sqs client")
 	if cfg.AwsConfig.Region == "" {
 		return nil, nil
 	}
