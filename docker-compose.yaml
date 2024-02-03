@@ -1,0 +1,80 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image : mongo
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    healthcheck:
+      test: ["CMD", "mongo" ,"--eval", "db.adminCommand('ping')"]
+    restart: unless-stopped
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "127.0.0.1:4566:4566"            # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+    environment:
+      - SERVICES=sqs
+      - HOSTNAME=localhost
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  aws-cli:
+    image: amazon/aws-cli
+    depends_on:
+      - localstack
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=eu-west-1
+
+
+  mySql:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: 'get_mobil_case_db'
+      MYSQL_ROOT_PASSWORD: 'root'
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+    ports:
+      - '3306:3306'
+
+
+  client-api:
+    build:
+      context: ./client_api
+      dockerfile: ./Dockerfile
+    depends_on:
+      - localstack
+    ports:
+      - 8080:8080
+    restart: on-failure
+
+  order-service:
+    build:
+      context: ./order_service
+      dockerfile: ./Dockerfile
+    links:
+      - localstack:4566
+    restart: on-failure
+    depends_on:
+      - localstack
+      - mongodb
+      - mySql
+
+  payment-service:
+    build:
+      context: ./payment_service
+      dockerfile: ./Dockerfile
+    links:
+      - localstack:4566
+    restart: on-failure
+    depends_on:
+      - localstack
+      - mongodb
+      - mySql
+

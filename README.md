@@ -25,7 +25,10 @@ After cloning the GitHub repository, the following steps should be taken:
 1. Ensure that the system has Docker installed. 
 2. The project is written with Go v1.21.5; upgrading to this version may be required for the current setup.
 
-All services can be brought up using Docker Compose.
+All services can be brought up manually using Docker Compose or makefile also can be used 
+if manually docker-compose file triggered, please make sure trigger the migration script.
+migration script is responsible for creating testing data and also its create sqs queue for localstack.
+
 ```command
  docker compose up -d
 ```
