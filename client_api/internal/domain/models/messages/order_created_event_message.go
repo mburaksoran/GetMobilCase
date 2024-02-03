@@ -23,5 +23,4 @@ type OrderEventContent struct {
 
 type OrderCreatedEventContent struct {
 	OrderEventContent
-	Text string `json:"text" validate:"required"`
 }

@@ -10,6 +10,8 @@ import (
 
 func eventHandlerFactory(eventName string, orderService service.OrderServiceInterface) (EventHandler, error) {
 	switch eventName {
+	case types.OrderCompletedEvent:
+		return NewOrderCompletedEventHandler(orderService), nil
 	case types.OrderCreatedEvent:
 		return NewOrderCreatedEventHandler(orderService), nil
 	default:

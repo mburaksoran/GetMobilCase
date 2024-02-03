@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/app/config"
-	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/messages"
+	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/models/messages"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/service"
 )
 

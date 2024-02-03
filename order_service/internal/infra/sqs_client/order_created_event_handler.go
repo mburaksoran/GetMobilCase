@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/messages"
+	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/models/messages"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/domain/service"
 	"github.com/mburaksoran/GetMobilCase/order_service/internal/infra/utils"
 )
@@ -21,7 +21,7 @@ func (rc *OrderCreatedEventHandler) HandleEvent(ctx context.Context, message *sq
 	if err != nil {
 		return fmt.Errorf("OrderCreatedEventHandler - failed to unmarshal %w", err.Error())
 	}
-	order := utils.OrderMessageToOrderModel(orderCreatedEvent)
+	order := utils.OrderCreatedMessageToOrderModel(orderCreatedEvent)
 	err = rc.OrderService.CreateOrder(order)
 	if err != nil {
 		return fmt.Errorf("OrderCreatedEventHandler - failed to CreateOrder %w", err.Error())

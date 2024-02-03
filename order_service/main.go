@@ -22,14 +22,9 @@ func main() {
 		fmt.Println(err)
 	}
 
-	sqlEngine, err := prepareSqlDbEngine(cfg)
+	_, err = prepareSqlDbEngine(cfg)
 	if err != nil {
 		fmt.Println(err)
-	}
-
-	sqlPingErr := sqlEngine.Client.Ping()
-	if sqlPingErr != nil {
-		fmt.Println("mysql connection failed :", sqlPingErr)
 	}
 
 	_, err = prepareMongoDbEngine(cfg)
@@ -55,32 +50,6 @@ func main() {
 
 }
 
-func Handler(message *sqs.Message) error {
-	fmt.Println("handle", message)
-
-	return nil
-}
-
-func pollSqs(chn chan<- *sqs.Message, client *sqs.SQS, cfg *config.AppConfig) {
-
-	for {
-		output, err := client.ReceiveMessage(&sqs.ReceiveMessageInput{
-			QueueUrl:            aws.String(cfg.SqsHost),
-			MaxNumberOfMessages: aws.Int64(2),
-			WaitTimeSeconds:     aws.Int64(10),
-		})
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		for _, message := range output.Messages {
-			chn <- message
-		}
-
-	}
-
-}
 func prepareMongoDbEngine(cfg *config.AppConfig) (*engines.MongoDbEngine, error) {
 	return engines.SetupMongoDBEngine(cfg)
 }
@@ -112,12 +81,3 @@ func PrepareSQSClient(cfg *config.AppConfig) (*sqs.SQS, error) {
 
 	return sqs.New(sess), nil
 }
-
-//func prepareConsumerConfig(cfg *config.AppConfig) Consumer.ConsumerConfig {
-//	return Consumer.ConsumerConfig{
-//		Type:      Consumer.SyncConsumer,
-//		QueueURL:  cfg.SqsHost,
-//		MaxWorker: cfg.SqsMaxWorkerCount,
-//		MaxMsg:    cfg.SqsMaxMessageCount,
-//	}
-//}

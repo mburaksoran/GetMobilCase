@@ -6,7 +6,7 @@ aws_config:
   key: "test"
   region: "eu-west-1"
 
-sqs_host : "http://localhost:4566/000000000000/order_updates"
+sqs_host : "http://localstack:4566/000000000000/order_updates"
 sql_host: "localhost"
 sql_user: "root"
 sql_password: "root"
@@ -17,7 +17,7 @@ google_scopes: ["https://www.googleapis.com/auth/userinfo.email","https://www.go
 google_redirect_url: "http://localhost:8080/google_callback"
 google_client_id: 324060700861-fvskdh6jbi6gmt2gr1r0pqvn5q0nv21q.apps.googleusercontent.com
 google_client_secret: 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
-mongo_db_url: "mongodb://localhost:27017"
+mongo_db_url: "mongodb://mongodb:27017"
 mongo_db_name: "test"
 mongo_db_collection_name: "products"
 
