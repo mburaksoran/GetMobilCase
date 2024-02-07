@@ -66,11 +66,15 @@ func HandleMessage(message *sqs.Message, client *sqs.SQS) {
 	orderCreatedEvent := messages.OrderCreatedEvent{}
 	err := json.Unmarshal([]byte(*message.Body), &orderCreatedEvent)
 	if err != nil {
-		fmt.Errorf("OrderCompletedEvent - failed to unmarshal %w", err.Error())
+		fmt.Errorf("OrderCompletedEvent - failed to unmarshal %s", err.Error())
 	}
 
 	order := OrderMessageToOrderModel(orderCreatedEvent)
-	OrderCompletedEvent(&order, client)
+	err = OrderCompletedEvent(&order, client)
+	if err != nil {
+		fmt.Errorf("OrderCompletedEvent error %s", err.Error())
+	}
+	err = DeleteMessage(URL, client, message.ReceiptHandle)
 }
 
 func OrderCompletedEvent(order *models.Order, client *sqs.SQS) error {
@@ -113,4 +117,12 @@ func OrderMessageToOrderModel(event messages.OrderCreatedEvent) models.Order {
 		ProductID:    event.Content.ProductIDs,
 		OrderedCount: event.Content.OrderedCount,
 	}
+}
+
+func DeleteMessage(url string, client *sqs.SQS, receiptHandle *string) error {
+	_, err := client.DeleteMessage(&sqs.DeleteMessageInput{
+		QueueUrl:      aws.String(url),
+		ReceiptHandle: receiptHandle,
+	})
+	return err
 }
