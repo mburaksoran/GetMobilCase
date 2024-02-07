@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/GetMobilCase/payment_service/internal/domain/models"
-	"github.com/GetMobilCase/payment_service/internal/domain/models/messages"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/mburaksoran/GetMobilCase/payment_service/internal/domain/models"
+	"github.com/mburaksoran/GetMobilCase/payment_service/internal/domain/models/messages"
 )
 
 const URL string = "http://localstack:4566/000000000000/order_updates"

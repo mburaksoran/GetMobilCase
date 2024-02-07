@@ -19,7 +19,7 @@ google_client_id: 324060700861-fvskdh6jbi6gmt2gr1r0pqvn5q0nv21q.apps.googleuserc
 google_client_secret: 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
 mongo_db_url: "mongodb://mongodb:27017"
 mongo_db_name: "test"
-mongo_db_collection_name: "products"
+mongo_db_collection_name: "sell_orders"
 
 
 
